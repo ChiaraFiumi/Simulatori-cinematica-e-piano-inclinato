@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratorio Virtuale di Fisica - Cinematica & Forze</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons via ESM -->
+  <script type="module">
+    import { createIcons, Play, Pause, RotateCcw, MoveRight, ArrowDownRight } from 'https://esm.sh/lucide@0.344.0';
+    window.lucideIcons = { Play, Pause, RotateCcw, MoveRight, ArrowDownRight };
+    document.addEventListener("DOMContentLoaded", () => {
+      createIcons({ icons: { Play, Pause, RotateCcw, MoveRight, ArrowDownRight } });
+    });
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <header class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-blue-900 mb-2">Laboratorio Virtuale di Fisica</h1>
+      <p class="text-gray-600">Simulazioni interattive per la Cinematica e la Dinamica</p>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap justify-center gap-2 mb-8">
+      <button onclick="switchTab('cinematica')" id="tab-tab-cinematica" class="tab-btn flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all bg-blue-600 text-white shadow-md">
+        <i data-lucide="move-right" class="w-[18px] h-[18px]"></i>
+        Cinematica (MRU/MRUA)
+      </button>
+      <button onclick="switchTab('forze')" id="tab-tab-forze" class="tab-btn flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all bg-white text-gray-600 hover:bg-gray-100 border border-gray-200">
+        <i data-lucide="arrow-down-right" class="w-[18px] h-[18px]"></i>
+        Forze sul Piano Inclinato
+      </button>
+    </div>
+
+    <!-- Content Area -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+      
+      <!-- SIMULATION 1: CINEMATICA (MRU/MRUA) -->
+      <div id="sim-cinematica" class="sim-content block">
+        <div class="flex flex-col gap-6">
+          <div class="flex flex-wrap justify-between items-center bg-blue-50 p-4 rounded-lg gap-4">
+            <div class="flex gap-4">
+              <button id="btn-mru" onclick="setKinMode('MRU')" class="px-4 py-2 rounded-md font-bold transition-colors bg-blue-600 text-white">
+                MRU (a = 0)
+              </button>
+              <button id="btn-mrua" onclick="setKinMode('MRUA')" class="px-4 py-2 rounded-md font-bold transition-colors bg-white text-blue-600 border border-blue-600">
+                MRUA (a ≠ 0)
+              </button>
+            </div>
+            
+            <div class="flex gap-2">
+              <button id="btn-play-kin" onclick="togglePlayKin()" class="flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700">
+                <span id="play-icon-kin"><i data-lucide="play" class="w-[18px] h-[18px]"></i></span>
+                <span id="play-text-kin">Avvia</span>
+              </button>
+              <button onclick="resetKin()" class="flex items-center gap-2 px-4 py-2 rounded-md font-bold bg-gray-200 text-gray-800 hover:bg-gray-300">
+                <i data-lucide="rotate-ccw" class="w-[18px] h-[18px]"></i> Ripristina
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col md:flex-row gap-8">
+            <!-- Controls -->
+            <div class="w-full md:w-1/3 space-y-6">
+              <div class="bg-gray-100 p-3 rounded-lg text-sm font-mono text-center border border-gray-300">
+                <strong>Legge del Moto:</strong><br>
+                <span id="eq-x" class="text-blue-700 font-semibold">x(t) = x₀ + v₀t + ½at²</span><br>
+                <span id="eq-v" class="text-green-700 font-semibold">v(t) = v₀ + at</span>
+              </div>
+
+              <div>
+                <label class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span>Posizione Iniziale (x₀)</span>
+                  <span id="label-x0" class="text-blue-600 font-bold">0 m</span>
+                </label>
+                <input type="range" id="input-x0" min="0" max="20" step="1" value="0" oninput="updateKinParams()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+              </div>
+
+              <div>
+                <label class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span id="text-v0">Velocità Iniziale (v₀)</span>
+                  <span id="label-v0" class="text-blue-600 font-bold">2 m/s</span>
+                </label>
+                <input type="range" id="input-v0" min="-5" max="10" step="0.5" value="2" oninput="updateKinParams()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+              </div>
+
+              <div>
+                <label class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span>Accelerazione (a)</span>
+                  <span id="label-acc" class="text-blue-600 font-bold">0 m/s²</span>
+                </label>
+                <input type="range" id="input-acc" min="-2" max="5" step="0.5" value="0" disabled oninput="updateKinParams()" class="w-full h-2 bg-gray-100 cursor-not-allowed rounded-lg appearance-none">
+                <p id="mru-warning" class="text-xs text-gray-500 mt-1">Nel MRU l'accelerazione è sempre 0.</p>
+              </div>
+
+              <div>
+                <label class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span>Linea del tempo [s]</span>
+                  <span id="label-time" class="text-blue-600 font-bold">0.0 s</span>
+                </label>
+                <input type="range" id="input-time" min="0" max="10" step="0.1" value="0" oninput="scrubTime(this.value)" class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer">
+              </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="w-full md:w-2/3 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col justify-center">
+              <canvas id="canvas-kinematics" width="600" height="250" class="w-full h-auto bg-white"></canvas>
+              <div class="p-4 bg-gray-50 text-sm text-gray-600 border-t">
+                <strong>Osservazione didattica:</strong> Nota come le tracce azzurre (stampate ogni secondo) sono equidistanti nel MRU, mentre si allontanano progressivamente nel MRUA, fornendo un'evidenza visiva diretta della variazione del modulo della velocità nel MRUA.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIMULATION 2: PIANO INCLINATO -->
+      <div id="sim-forze" class="sim-content hidden">
+        <div class="flex flex-col gap-6">
+          
+          <div class="flex flex-wrap justify-between items-center bg-blue-50 p-4 rounded-lg gap-4">
+            <h2 class="text-xl font-bold text-blue-900">Moto sul Piano Inclinato</h2>
+            <div class="flex gap-2">
+              <button id="btn-play-plane" onclick="togglePlayPlane()" class="flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700">
+                <span id="play-icon-plane"><i data-lucide="play" class="w-[18px] h-[18px]"></i></span>
+                <span id="play-text-plane">Avvia</span>
+              </button>
+              <button onclick="resetPlane()" class="flex items-center gap-2 px-4 py-2 rounded-md font-bold bg-gray-200 text-gray-800 hover:bg-gray-300">
+                <i data-lucide="rotate-ccw" class="w-[18px] h-[18px]"></i> Ripristina
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col md:flex-row gap-8">
+            <!-- Controls -->
+            <div class="w-full md:w-1/3 space-y-6">
+              <div>
+                <label class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span>Angolo (θ)</span>
+                  <span id="label-angle" class="text-blue-600 font-bold">30°</span>
+                </label>
+                <input type="range" id="input-angle" min="0" max="90" value="30" oninput="updatePlaneParams()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+              </div>
+
+              <div>
+                <label class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span>Massa (m)</span>
+                  <span id="label-mass" class="text-blue-600 font-bold">10 kg</span>
+                </label>
+                <input type="range" id="input-mass" min="1" max="50" step="1" value="10" oninput="updatePlaneParams()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+              </div>
+
+              <div>
+                <label class="flex justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span>Lunghezza Piano (L)</span>
+                  <span id="label-length" class="text-blue-600 font-bold">10 m</span>
+                </label>
+                <input type="range" id="input-length" min="5" max="30" step="1" value="10" oninput="updatePlaneParams()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+              </div>
+
+              <div class="mt-6 pt-4 border-t border-gray-200">
+                <div class="bg-blue-50 p-3 rounded-lg text-sm text-blue-900 mb-4 border border-blue-200">
+                  <strong>Legge del Moto:</strong> <span class="font-semibold">x(t) = x₀ + v₀t + ½at²</span><br>
+                  <strong>Accelerazione:</strong><br>
+                  a = g · sin(θ) = <span id="val-acc-plane" class="font-bold">4.91</span> m/s²
+                </div>
+
+                <h3 class="font-bold text-gray-800 mb-3">Moduli dei Vettori:</h3>
+                <ul class="space-y-2 text-sm">
+                  <li class="flex justify-between text-red-600 font-medium">
+                    <span>Forza Peso (P) = m·g</span>
+                    <span id="val-weight">98.1 N</span>
+                  </li>
+                  <li class="flex justify-between text-blue-600 font-medium">
+                    <span>P parallela = P·sin(θ)</span>
+                    <span id="val-ppar">49.1 N</span>
+                  </li>
+                  <li class="flex justify-between text-green-600 font-medium">
+                    <span>P perpendicolare = P·cos(θ)</span>
+                    <span id="val-pperp">85.0 N</span>
+                  </li>
+                  <li class="flex justify-between text-purple-600 font-medium">
+                    <span>Reazione Vincolare (N) = P<sub>⊥</sub></span>
+                    <span id="val-reac">85.0 N</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="w-full md:w-2/3 flex items-center justify-center bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <canvas id="canvas-plane" width="600" height="400" class="max-w-full h-auto bg-white"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ============================================================================
+    // NAVIGATION LOGIC
+    // ============================================================================
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.add('bg-white', 'text-gray-600', 'border-gray-200');
+      });
+      document.querySelectorAll('.sim-content').forEach(content => {
+        content.classList.add('hidden');
+      });
+
+      const activeBtn = document.getElementById(`tab-tab-${tab}`);
+      activeBtn.classList.remove('bg-white', 'text-gray-600', 'border-gray-200');
+      activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+
+      document.getElementById(`sim-${tab}`).classList.remove('hidden');
+
+      if (tab === 'cinematica') {
+        drawKinematics();
+      } else if (tab === 'forze') {
+        drawPlane();
+      }
+    }
+
+    // ============================================================================
+    // CINEMATICA LOGIC
+    // ============================================================================
+    let kinPlaying = false;
+    let kinTime = 0;
+    let kinX0 = 0;
+    let kinV0 = 2;
+    let kinAcc = 0;
+    let kinMode = 'MRU';
+    let kinAnimationId = null;
+    let lastTime = 0;
+
+    function setKinMode(mode) {
+      kinMode = mode;
+      const btnMru = document.getElementById('btn-mru');
+      const btnMrua = document.getElementById('btn-mrua');
+      const inputAcc = document.getElementById('input-acc');
+      const warning = document.getElementById('mru-warning');
+
+      if (mode === 'MRU') {
+        btnMru.className = "px-4 py-2 rounded-md font-bold transition-colors bg-blue-600 text-white";
+        btnMrua.className = "px-4 py-2 rounded-md font-bold transition-colors bg-white text-blue-600 border border-blue-600";
+        inputAcc.disabled = true;
+        inputAcc.className = "w-full h-2 bg-gray-100 cursor-not-allowed rounded-lg appearance-none";
+        warning.classList.remove('hidden');
+        kinAcc = 0;
+        document.getElementById('input-acc').value = 0;
+        document.getElementById('eq-x').innerText = 'x(t) = x₀ + v·t';
+        document.getElementById('eq-v').innerText = 'v(t) = v (costante)';
+        document.getElementById('text-v0').innerText = 'Velocità (v)';
+      } else {
+        btnMrua.className = "px-4 py-2 rounded-md font-bold transition-colors bg-blue-600 text-white";
+        btnMru.className = "px-4 py-2 rounded-md font-bold transition-colors bg-white text-blue-600 border border-blue-600";
+        inputAcc.disabled = false;
+        inputAcc.className = "w-full h-2 bg-gray-200 cursor-pointer rounded-lg appearance-none";
+        warning.classList.add('hidden');
+        kinAcc = 2;
+        document.getElementById('input-acc').value = 2;
+        document.getElementById('eq-x').innerText = 'x(t) = x₀ + v₀t + ½at²';
+        document.getElementById('eq-v').innerText = 'v(t) = v₀ + at';
+        document.getElementById('text-v0').innerText = 'Velocità Iniziale (v₀)';
+      }
+      resetKin();
+    }
+
+    function updateKinParams() {
+      kinX0 = Number(document.getElementById('input-x0').value);
+      kinV0 = Number(document.getElementById('input-v0').value);
+      kinAcc = Number(document.getElementById('input-acc').value);
+
+      document.getElementById('label-x0').innerText = `${kinX0} m`;
+      document.getElementById('label-v0').innerText = `${kinV0} m/s`;
+      document.getElementById('label-acc').innerText = `${kinAcc} m/s²`;
+
+      resetKin();
+    }
+
+    function togglePlayKin() {
+      kinPlaying = !kinPlaying;
+      const btn = document.getElementById('btn-play-kin');
+      const text = document.getElementById('play-text-kin');
+      const iconSpan = document.getElementById('play-icon-kin');
+
+      if (kinPlaying) {
+        btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-amber-500 hover:bg-amber-600";
+        text.innerText = "Pausa";
+        iconSpan.innerHTML = `<i data-lucide="pause" class="w-[18px] h-[18px]"></i>`;
+        lastTime = performance.now();
+        kinAnimationId = requestAnimationFrame(animateKin);
+      } else {
+        btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700";
+        text.innerText = "Avvia";
+        iconSpan.innerHTML = `<i data-lucide="play" class="w-[18px] h-[18px]"></i>`;
+        cancelAnimationFrame(kinAnimationId);
+      }
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function resetKin() {
+      kinPlaying = false;
+      kinTime = 0;
+      cancelAnimationFrame(kinAnimationId);
+      document.getElementById('input-time').value = 0;
+      document.getElementById('label-time').innerText = "0.0 s";
+
+      const btn = document.getElementById('btn-play-kin');
+      const text = document.getElementById('play-text-kin');
+      const iconSpan = document.getElementById('play-icon-kin');
+      btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700";
+      text.innerText = "Avvia";
+      iconSpan.innerHTML = `<i data-lucide="play" class="w-[18px] h-[18px]"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+
+      drawKinematics();
+    }
+
+    function scrubTime(val) {
+      kinTime = Number(val);
+      kinPlaying = false;
+      cancelAnimationFrame(kinAnimationId);
+      
+      const btn = document.getElementById('btn-play-kin');
+      const text = document.getElementById('play-text-kin');
+      const iconSpan = document.getElementById('play-icon-kin');
+      btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700";
+      text.innerText = "Avvia";
+      iconSpan.innerHTML = `<i data-lucide="play" class="w-[18px] h-[18px]"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+
+      document.getElementById('label-time').innerText = `${kinTime.toFixed(1)} s`;
+      drawKinematics();
+    }
+
+    function animateKin(timestamp) {
+      if (!kinPlaying) return;
+      const dt = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      kinTime += dt;
+      if (kinTime >= 10) {
+        kinTime = 10;
+        kinPlaying = false;
+        const btn = document.getElementById('btn-play-kin');
+        const text = document.getElementById('play-text-kin');
+        const iconSpan = document.getElementById('play-icon-kin');
+        btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700";
+        text.innerText = "Avvia";
+        iconSpan.innerHTML = `<i data-lucide="play" class="w-[18px] h-[18px]"></i>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      document.getElementById('input-time').value = kinTime;
+      document.getElementById('label-time').innerText = `${kinTime.toFixed(1)} s`;
+
+      drawKinematics();
+      if (kinPlaying) {
+        kinAnimationId = requestAnimationFrame(animateKin);
+      }
+    }
+
+    function drawKinematics() {
+      const canvas = document.getElementById('canvas-kinematics');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // CALCOLO DINAMICO SCALA per evitare che l'oggetto esca dallo schermo
+      const getPos = (t) => kinX0 + kinV0 * t + 0.5 * kinAcc * t * t;
+      let maxPosReached = Math.abs(getPos(10));
+      if (kinAcc !== 0) {
+        const tVertex = -kinV0 / kinAcc;
+        if (tVertex > 0 && tVertex <= 10) {
+          const posVertex = Math.abs(getPos(tVertex));
+          if (posVertex > maxPosReached) maxPosReached = posVertex;
+        }
+      }
+      const safetyLimit = Math.max(20, Math.abs(kinX0), maxPosReached);
+      const scale = (width - 100) / safetyLimit;
+
+      const originX = 50;
+      const originY = height / 2 + 50;
+
+      // Disegna la base / pavimento
+      ctx.beginPath();
+      ctx.moveTo(originX - 20, originY);
+      ctx.lineTo(width - 20, originY);
+      ctx.strokeStyle = '#6B7280'; // Grigio più scuro per sembrare un piano fisico
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Tracce dell'effetto Stroboscopico (ogni secondo reale)
+      const currentX = getPos(kinTime);
+      for (let t = 0; t <= Math.floor(kinTime); t++) {
+        const ghostX = getPos(t);
+        const pxGhost = originX + ghostX * scale;
+        if (pxGhost < width - 20 && pxGhost > 10) {
+          ctx.beginPath();
+          ctx.arc(pxGhost, originY - 15, 6, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+          ctx.fill();
+          ctx.fillStyle = '#3B82F6';
+          ctx.fillText(`t=${t}s`, pxGhost, originY - 30);
+        }
+      }
+
+      // Disegna la particella mobile attuale
+      const pxCurrent = originX + currentX * scale;
+      if (pxCurrent < width - 10 && pxCurrent > 10) {
+        ctx.beginPath();
+        ctx.arc(pxCurrent, originY - 15, 12, 0, Math.PI * 2);
+        ctx.fillStyle = '#EF4444';
+        ctx.fill();
+        ctx.strokeStyle = '#991B1B';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // Overlay di visualizzazione Dati
+      ctx.fillStyle = '#1F2937';
+      ctx.font = 'bold 16px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Tempo (t) = ${kinTime.toFixed(2)} s`, 20, 30);
+      ctx.fillText(`Posizione (x) = ${currentX.toFixed(2)} m`, 20, 55);
+      const currentV = kinV0 + kinAcc * kinTime;
+      ctx.fillText(`Velocità (v) = ${currentV.toFixed(2)} m/s`, 20, 80);
+    }
+
+    // ============================================================================
+    // PIANO INCLINATO LOGIC
+    // ============================================================================
+    let planeAngle = 30;
+    let planeMass = 10;
+    let planeLength = 10;
+    let planePlaying = false;
+    let planeTime = 0;
+    let planeAnimId = null;
+    let lastPlaneTime = 0;
+    const g = 9.81;
+
+    function togglePlayPlane() {
+      planePlaying = !planePlaying;
+      const btn = document.getElementById('btn-play-plane');
+      const text = document.getElementById('play-text-plane');
+      const iconSpan = document.getElementById('play-icon-plane');
+
+      if (planePlaying) {
+        btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-amber-500 hover:bg-amber-600";
+        text.innerText = "Pausa";
+        iconSpan.innerHTML = `<i data-lucide="pause" class="w-[18px] h-[18px]"></i>`;
+        lastPlaneTime = performance.now();
+        planeAnimId = requestAnimationFrame(animatePlane);
+      } else {
+        btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700";
+        text.innerText = "Avvia";
+        iconSpan.innerHTML = `<i data-lucide="play" class="w-[18px] h-[18px]"></i>`;
+        cancelAnimationFrame(planeAnimId);
+      }
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function resetPlane() {
+      planePlaying = false;
+      planeTime = 0;
+      cancelAnimationFrame(planeAnimId);
+      const btn = document.getElementById('btn-play-plane');
+      const text = document.getElementById('play-text-plane');
+      const iconSpan = document.getElementById('play-icon-plane');
+      btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700";
+      text.innerText = "Avvia";
+      iconSpan.innerHTML = `<i data-lucide="play" class="w-[18px] h-[18px]"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+      drawPlane();
+    }
+
+    function animatePlane(timestamp) {
+      if (!planePlaying) return;
+      const dt = (timestamp - lastPlaneTime) / 1000;
+      lastPlaneTime = timestamp;
+
+      planeTime += dt;
+      const radAngle = (planeAngle * Math.PI) / 180;
+      const planeAcc = g * Math.sin(radAngle);
+      const dist = 0.5 * planeAcc * planeTime * planeTime;
+
+      // Fine della simulazione
+      if (dist >= planeLength || planeAngle === 0) {
+        planeTime = planeAngle === 0 ? 0 : Math.sqrt((2 * planeLength) / planeAcc);
+        planePlaying = false;
+        
+        const btn = document.getElementById('btn-play-plane');
+        const text = document.getElementById('play-text-plane');
+        const iconSpan = document.getElementById('play-icon-plane');
+        btn.className = "flex items-center gap-2 px-4 py-2 rounded-md font-bold text-white transition-colors bg-green-600 hover:bg-green-700";
+        text.innerText = "Avvia";
+        iconSpan.innerHTML = `<i data-lucide="play" class="w-[18px] h-[18px]"></i>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      drawPlane();
+      if (planePlaying) {
+        planeAnimId = requestAnimationFrame(animatePlane);
+      }
+    }
+
+    function updatePlaneParams() {
+      planeAngle = Number(document.getElementById('input-angle').value);
+      planeMass = Number(document.getElementById('input-mass').value);
+      planeLength = Number(document.getElementById('input-length').value);
+
+      document.getElementById('label-angle').innerText = `${planeAngle}°`;
+      document.getElementById('label-mass').innerText = `${planeMass} kg`;
+      document.getElementById('label-length').innerText = `${planeLength} m`;
+
+      resetPlane();
+    }
+
+    function drawPlane() {
+      const canvas = document.getElementById('canvas-plane');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      let radAngle = (planeAngle * Math.PI) / 180;
+      let cosA = Math.cos(radAngle);
+      let sinA = Math.sin(radAngle);
+      
+      // Precisione stretta per 90 gradi
+      if (planeAngle === 90) {
+        cosA = 0;
+        sinA = 1;
+      }
+
+      const weight = planeMass * g;
+      const pParallel = weight * sinA;
+      const pPerpendicular = weight * cosA;
+      const planeAcc = g * sinA;
+
+      // Aggiorna l'interfaccia testuale
+      document.getElementById('val-acc-plane').innerText = planeAcc.toFixed(2);
+      document.getElementById('val-weight').innerText = `${weight.toFixed(1)} N`;
+      document.getElementById('val-ppar').innerText = `${pParallel.toFixed(1)} N`;
+      document.getElementById('val-pperp').innerText = `${pPerpendicular.toFixed(1)} N`;
+      document.getElementById('val-reac').innerText = `${pPerpendicular.toFixed(1)} N`;
+
+      const marginX = 80;
+      const marginY = 60;
+      const originX = marginX;
+      const originY = height - marginY;
+
+      // Calcola una scala dinamica molto robusta:
+      // Assicura che sia l'asse orizzontale che l'altezza massima (con qualsiasi angolo) rientrino nel canvas.
+      let scale = (width - marginX * 2) / planeLength; 
+      if (planeLength * scale * sinA > (height - marginY - 40)) { // 40px di margine alto
+        scale = (height - marginY - 40) / (planeLength * sinA);
+      }
+
+      const pxLength = planeLength * scale;
+      const topX = originX + pxLength * cosA;
+      const topY = originY - pxLength * sinA;
+
+      // Disegno Terreno di fondo
+      ctx.beginPath();
+      ctx.moveTo(originX - 40, originY);
+      ctx.lineTo(width - 20, originY);
+      ctx.strokeStyle = '#9CA3AF';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Disegno Sagoma del Piano Inclinato
+      ctx.beginPath();
+      ctx.moveTo(originX, originY);
+      ctx.lineTo(topX, topY);
+      ctx.lineTo(topX, originY);
+      ctx.closePath();
+      ctx.fillStyle = '#E5E7EB';
+      ctx.fill();
+      ctx.strokeStyle = '#4B5563';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Disegno Arco dell'angolo (non disegnare arco per 0° o 90°)
+      if (planeAngle > 0 && planeAngle < 90) {
+        ctx.beginPath();
+        ctx.arc(originX, originY, 40, 0, -radAngle, true);
+        ctx.strokeStyle = '#2563EB';
+        ctx.stroke();
+        ctx.fillStyle = '#2563EB';
+        ctx.font = '14px Arial';
+        ctx.fillText(`${planeAngle}°`, originX + 50, originY - 10);
+      } else if (planeAngle === 90) {
+        ctx.fillStyle = '#2563EB';
+        ctx.font = '14px Arial';
+        ctx.fillText(`90°`, originX + 15, originY - 10);
+      }
+
+      // Blocco posizionato dinamicamente in base al tempo della simulazione
+      let dist = 0.5 * planeAcc * planeTime * planeTime;
+      if (dist > planeLength) dist = planeLength;
+      if (planeAngle === 0) dist = 0; 
+      
+      const currentDistFromBottom = pxLength - (dist * scale);
+      const blockX = originX + currentDistFromBottom * cosA;
+      const blockY = originY - currentDistFromBottom * sinA;
+
+      ctx.save();
+      ctx.translate(blockX, blockY);
+      ctx.rotate(-radAngle);
+
+      const blockSize = 40;
+      ctx.fillStyle = '#F59E0B';
+      ctx.fillRect(-blockSize/2, -blockSize, blockSize, blockSize);
+      ctx.strokeStyle = '#B45309';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-blockSize/2, -blockSize, blockSize, blockSize);
+
+      // Configurazione Vettori (scopo illustrativo proporzionale)
+      const vectorScale = 0.5;
+      const drawArrow = (fromX, fromY, toX, toY, color) => {
+        if (Math.abs(fromX - toX) < 0.1 && Math.abs(fromY - toY) < 0.1) return; // Non disegnare se lunghezza = 0
+        const headlen = 10;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const ang = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(ang - Math.PI / 6), toY - headlen * Math.sin(ang - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(ang + Math.PI / 6), toY - headlen * Math.sin(ang + Math.PI / 6));
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      };
+
+      const cx = 0;
+      const cy = -blockSize / 2;
+
+      // Forza Peso P (Sempre verticale verso il basso)
+      drawArrow(cx, cy, cx - pParallel * vectorScale, cy + pPerpendicular * vectorScale, '#EF4444');
+
+      // P parallela (direzione lungo lo scivolo, verso il basso)
+      if (planeAngle > 0) {
+        drawArrow(cx, cy, cx - pParallel * vectorScale, cy, '#3B82F6');
+      }
+
+      // P perpendicolare (direzione entrante nel piano)
+      if (planeAngle < 90) {
+        drawArrow(cx, cy, cx, cy + pPerpendicular * vectorScale, '#10B981');
+      }
+
+      // Reazione Vincolare N (direzione ortogonale uscente dal piano)
+      if (planeAngle < 90) {
+        drawArrow(cx, cy, cx, cy - pPerpendicular * vectorScale, '#8B5CF6');
+      }
+
+      ctx.restore();
+
+      // Overlay di visualizzazione Dati della simulazione
+      ctx.fillStyle = '#1F2937';
+      ctx.font = 'bold 16px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Tempo: ${planeTime.toFixed(2)} s`, 20, 30);
+      ctx.fillText(`Spazio percorso: ${dist.toFixed(2)} m`, 20, 55);
+      ctx.fillText(`Velocità: ${(planeAcc * planeTime).toFixed(2)} m/s`, 20, 80);
+    }
+
+    // Inizializzazione automatica
+    window.onload = function() {
+      drawKinematics();
+      drawPlane();
+    }
+  </script>
+</body>
+</html>
